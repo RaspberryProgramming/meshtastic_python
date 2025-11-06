@@ -126,7 +126,13 @@ class StreamInterface(MeshInterface):
         # We convert into a string, because the TCP code doesn't work with byte arrays
         header: bytes = bytes([START1, START2, (bufLen >> 8) & 0xFF, bufLen & 0xFF])
         logger.debug(f"sending header:{header!r} b:{b!r}")
-        self._writeBytes(header + b)
+
+        try:
+            self._writeBytes(header + b)
+        except (OSError, BrokenPipeError):
+            logger.error("Lost connection to radio while sending data")
+            # Tell the client that the connection is lost and clean up the stream
+            self._disconnected()
 
     def close(self) -> None:
         """Close a connection to the device"""
