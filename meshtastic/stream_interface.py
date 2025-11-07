@@ -129,10 +129,16 @@ class StreamInterface(MeshInterface):
 
         try:
             self._writeBytes(header + b)
-        except (OSError, BrokenPipeError):
-            logger.error("Lost connection to radio while sending data")
+        except (OSError, BrokenPipeError) as ex :
             # Tell the client that the connection is lost and clean up the stream
-            self._disconnected()
+            if (
+                not self._wantExit
+            ):  # We might intentionally get an exception during shutdown
+                logger.error(
+                    f"Unexpected {type(ex).__name__}, terminating meshtastic reader... {ex}"
+                )
+                self._disconnected()
+
 
     def close(self) -> None:
         """Close a connection to the device"""
